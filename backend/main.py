@@ -18,23 +18,11 @@ logger=logging.getLogger('ats_resume_scorer')
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     logger.info('Starting ATS Resume Analyzer API...')
-
-    logger.info(f'Loading spaCy NLP model: {SPACY_MODEL_PRIMARY}')
-    import spacy
-    try:
-        app.state.nlp = spacy.load(SPACY_MODEL_PRIMARY)
-        logger.info(f'Loaded {SPACY_MODEL_PRIMARY}')
-    except OSError:
-        logger.warning(f'{SPACY_MODEL_PRIMARY} not found — falling back to {SPACY_MODEL_SECONDARY}')
-        app.state.nlp = spacy.load(SPACY_MODEL_SECONDARY)
-        logger.info(f'Loaded {SPACY_MODEL_SECONDARY} (fallback)')
-
-    logger.info(f'Loading SentenceTransformer: {SENTENCE_TRANSFORMER_MODEL}')
-    from sentence_transformers import SentenceTransformer
-    app.state.embedder = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL)
-    logger.info(f'Loaded {SENTENCE_TRANSFORMER_MODEL}')
-
-    logger.info('All models loaded. API is ready to serve requests.')
+    # Defer heavy model loading until the first request to reduce startup memory
+    # footprint on constrained environments (e.g. Render free instances).
+    app.state.nlp = None
+    app.state.embedder = None
+    logger.info('Models will be loaded lazily on first use.')
 
     yield
 

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 
 from backend.api.auth import get_current_user
 from backend.models.schemas import AnalysisResponse, ComponentScores, JDComparison, SkillValidationDetails
+from backend.core.models import ensure_nlp, ensure_embedder
 from backend.utils.file_utils import (
     get_default_grammar_results,
     get_default_location_results,
@@ -29,6 +30,10 @@ async def analyze_resume(
 ):
     warnings: List[str] = []
 
+
+    # Ensure models are initialized lazily if not already loaded
+    ensure_nlp(request.app)
+    ensure_embedder(request.app)
 
     nlp      = request.app.state.nlp
     embedder = request.app.state.embedder
